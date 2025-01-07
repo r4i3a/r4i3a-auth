@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Link, useNavigate } from 'react-router-dom';
+import Master from '../Layout/Master';
 
 function RegisterPage() {
     const [name, setName] = useState('');
@@ -8,40 +9,57 @@ function RegisterPage() {
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
-    const [loading, setLoading] = useState(false); 
+    const [loading, setLoading] = useState(false);
+    const [fieldErrors, setFieldErrors] = useState({ name: '', email: '', password: '' });
     const navigate = useNavigate();
 
+    useEffect(() => {
+        const fetchUser = async () => {
+            const token = localStorage.getItem('token');
+            const email = localStorage.getItem('email');
+
+            if (token && email) {
+                navigate('/dashboard');
+                return;
+            }
+        };
+
+        fetchUser();
+    }, [navigate]);
+
     const validateInputs = () => {
-        const nameRegex = /^[A-Za-z\s]+$/; 
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; 
-        const passwordRegex = /^(?=.*[a-zA-Z])(?=.*\d)[A-Za-z\d]+$/; 
-    
+        const nameRegex = /^[A-Za-z\s]+$/;
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        const passwordRegex = /^(?=.*[a-zA-Z])(?=.*\d)[A-Za-z\d]+$/;
+
+        let errors = { name: '', email: '', password: '' };
+
         if (!name) {
-            return 'Name is required!';
+            errors.name = 'Name is required!';
+        } else if (!nameRegex.test(name)) {
+            errors.name = 'Name must contain only alphabets and spaces!';
+        } else if (name.length < 3 || name.length > 32) {
+            errors.name = 'Name must be between 3 and 32 characters!';
         }
-        if (!nameRegex.test(name)) {
-            return 'Name must contain only alphabets and spaces!';
-        }
-        if (name.length < 3 || name.length > 32) {
-            return 'Name must be between 3 and 32 characters!';
-        }
+
         if (!email) {
-            return 'Email is required!';
+            errors.email = 'Email is required!';
+        } else if (!emailRegex.test(email)) {
+            errors.email = 'Please enter a valid email address!';
         }
-        if (!emailRegex.test(email)) {
-            return 'Please enter a valid email address!';
-        }
+
         if (!password) {
-            return 'Password is required!';
+            errors.password = 'Password is required!';
+        } else if (!passwordRegex.test(password)) {
+            errors.password = 'Password must contain at least one letter and one number!';
+        } else if (password.length < 6 || password.length > 32) {
+            errors.password = 'Password must be between 6 and 32 characters!';
         }
-        if (!passwordRegex.test(password)) {
-            return 'Password must contain at least one letter and one number!';
-        }
-        if (password.length < 6 || password.length > 32) {
-            return 'Password must be between 6 and 32 characters!';
-        }
-        return null;
-    };    
+
+        setFieldErrors(errors);
+
+        return errors;
+    };
 
     const checkDuplicateEmail = async () => {
         setLoading(true);
@@ -67,16 +85,16 @@ function RegisterPage() {
 
         setError('');
         setSuccess('');
+        setFieldErrors({ name: '', email: '', password: '' });
 
-        const validationError = validateInputs();
-        if (validationError) {
-            setError(validationError);
+        const validationErrors = validateInputs();
+        if (Object.values(validationErrors).some(error => error)) {
             return;
         }
 
         const isDuplicate = await checkDuplicateEmail();
         if (isDuplicate) {
-            setError('Email is already in use. Please use a different email!');
+            setFieldErrors(prev => ({ ...prev, email: 'Email is already in use. Please use a different email!' }));
             return;
         }
 
@@ -110,54 +128,76 @@ function RegisterPage() {
     };
 
     return (
-        <div className="flex justify-center items-center h-screen bg-gray-950">
-            <div className="bg-white p-6 rounded-lg shadow-lg w-96">
-                <h2 className="text-2xl font-semibold mb-8 pb-4 border-b">Register</h2>
-                {error && <div className="text-red-500 mb-4">{error}</div>}
-                {success && <div className="text-green-500 mb-4">{success}</div>}
-                <form onSubmit={handleRegister}>
+        <Master
+            title="Register"
+            auth="true"
+        >
+            <h2 className="text-2xl font-semibold mb-2">Register</h2>
+            <span className="text-sm text-gray-400">
+                Sign up to access personalized features and updates.
+            </span>
+
+            {error && <div className="text-red-500 text-sm mb-4">{error}</div>}
+            {success && <div className="text-green-500 text-sm mb-4">{success}</div>}
+
+            <form onSubmit={handleRegister} className="mt-5">
+                <div className="mb-2">
+                    <label className="text-sm text-gray-500">Full Name</label>
                     <input
                         type="text"
                         placeholder="Name"
-                        className="w-full p-2 mb-4 border rounded"
+                        className={`w-full p-2 border rounded mt-1 ${fieldErrors.name ? 'border-red-500' : ''}`}
                         value={name}
                         onChange={(e) => setName(e.target.value)}
                     />
+                    {fieldErrors.name && <div className="text-red-500 text-sm my-2">{fieldErrors.name}</div>}
+                </div>  
+                
+                <div className="mb-2">
+                    <label className="text-sm text-gray-500">Email</label>
                     <input
                         type="email"
                         placeholder="Email"
-                        className="w-full p-2 mb-4 border rounded"
+                        className={`w-full p-2 border rounded mt-1 ${fieldErrors.email ? 'border-red-500' : ''}`}
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                     />
+                    {fieldErrors.email && <div className="text-red-500 text-sm my-2">{fieldErrors.email}</div>}
+                </div> 
+                
+                <div className="mb-2">
+                    <label className="text-sm text-gray-500">Password</label>
                     <input
                         type="password"
                         placeholder="Password"
-                        className="w-full p-2 mb-4 border rounded"
+                        className={`w-full p-2 border rounded mt-1 ${fieldErrors.password ? 'border-red-500' : ''}`}
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                     />
-                    <button
-                        type="submit"
-                        className={`w-full py-2 text-white rounded flex justify-center items-center ${
-                            loading ? 'bg-gray-400' : 'bg-gray-700 hover:bg-gray-950'
-                        }`}
-                        disabled={loading}
-                    >
-                        {loading ? (
-                            <span className="h-5 w-5 border-2 border-t-transparent border-white rounded-full animate-spin"></span>
-                        ) : (
-                            'Register'
-                        )}
-                    </button>
-                </form>
-                <p className="mt-4 text-center">
-                    Already have an account?{' '}                   
-                    <Link to="/login" className=" text-blue-500">Login</Link>
-
-                </p>
-            </div>
-        </div>
+                    {fieldErrors.password && <div className="text-red-500 text-sm my-2">{fieldErrors.password}</div>}
+                </div>   
+                
+                <button
+                    type="submit"
+                    className={`w-full py-2 text-white rounded flex justify-center items-center ${
+                        loading ? 'bg-gray-400' : 'bg-gray-700 hover:bg-gray-950'
+                    }`}
+                    disabled={loading}
+                >
+                    {loading ? (
+                        <span className="h-5 w-5 border-2 border-t-transparent border-white rounded-full animate-spin"></span>
+                    ) : (
+                        'Register'
+                    )}
+                </button>
+            </form>
+            <p className="mt-4 text-center text-gray-400">
+                Already have an account?{' '}
+                <Link to="/login" className="text-gray-900 font-medium">
+                    Login
+                </Link>
+            </p>
+        </Master>
     );
 }
 
