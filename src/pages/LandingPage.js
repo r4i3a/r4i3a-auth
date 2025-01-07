@@ -5,7 +5,7 @@ function LandingPage() {
     return (
         <Master>
             <div className="relative">
-                <img src="/wallpaper.jpeg" className="w-full h-auto rounded-md" />
+                <img src="/wallpaper.jpeg" className="w-full h-auto rounded-md" alt="Landing Banner"/>
             </div>
             <div className="mt-7">
                 <h2 className="mb-2 text-lg font-bold leading-none tracking-tight">R4i3a Auth</h2>
